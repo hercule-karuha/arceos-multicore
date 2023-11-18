@@ -1,4 +1,4 @@
 [submodule "crates/hypercraft"]
 	path = crates/hypercraft
-	url = https://github.com/arceos-hypervisor/hypercraft.git
+	url = git@github.com:hercule-karuha/hypercraft-multicore.git
 	branch = main
