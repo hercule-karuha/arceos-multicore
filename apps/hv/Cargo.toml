@@ -10,3 +10,4 @@ libax = { path = "../../ulib/libax", features = ["alloc", "hv"] }
 page_table_entry = { path = "../../crates/page_table_entry" }
 fdt = {version = "0.1.5"}
 arrayvec = { version = "0.7.2", default-features = false }
+lazy_init = { path = "../../crates/lazy_init"}

@@ -93,6 +93,7 @@ version = "0.1.0"
 dependencies = [
  "arrayvec",
  "fdt",
+ "lazy_init",
  "libax",
  "page_table_entry",
 ]
