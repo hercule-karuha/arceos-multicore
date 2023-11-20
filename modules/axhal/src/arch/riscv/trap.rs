@@ -19,7 +19,9 @@ fn dump_instructions_at(base: usize, from: isize, to: isize) {
         let addr: usize = base.wrapping_add_signed(offset * 4);
         let zeroMark = if offset == 0 { '*' } else { ' ' };
 
-        debug!("{}{:#016x}: {:032b}", zeroMark, addr, unsafe { *(addr as *const u32) })
+        debug!("{}{:#016x}: {:032b}", zeroMark, addr, unsafe {
+            *(addr as *const u32)
+        })
     }
 }
 
@@ -31,11 +33,7 @@ fn riscv_trap_handler(tf: &mut TrapFrame, _from_user: bool) {
         Trap::Interrupt(_) => crate::trap::handle_irq_extern(scause.bits()),
         Trap::Exception(E::IllegalInstruction) => {
             dump_instructions_at(tf.sepc, -4, 4);
-            panic!(
-                "Illegal instruction @ {:#x}:\n{:#x?}",
-                tf.sepc,
-                tf
-            );
+            panic!("Illegal instruction @ {:#x}:\n{:#x?}", tf.sepc, tf);
         }
         _ => {
             panic!(

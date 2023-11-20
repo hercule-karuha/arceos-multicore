@@ -140,13 +140,13 @@ fn main(hart_id: usize) {
 #[no_mangle]
 pub extern "C" fn secondary_main(hart_id: usize) {
     // boot cpu
-    PerCpu::<HyperCraftHalImpl>::init(0, 0x4000);
+    PerCpu::<HyperCraftHalImpl>::init(hart_id, 0x4000);
 
     // get current percpu
     let pcpu = PerCpu::<HyperCraftHalImpl>::this_cpu();
 
     // create vcpu
-    let gpt = setup_gpm(0x9000_0000).unwrap();
+    // let gpt = setup_gpm(0x9000_0000).unwrap();
     let vcpu = pcpu.create_vcpu(hart_id, 0).unwrap();
 
     while let None = unsafe { HS_VM.try_get() } {
