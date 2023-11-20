@@ -46,6 +46,7 @@ use lazy_init::LazyInit;
 
 #[cfg(target_arch = "riscv64")]
 static mut HS_VM: LazyInit<VM<HyperCraftHalImpl, GuestPageTable>> = LazyInit::new();
+// static mut INITED_CPU_NUM : spin::Mutex<usize> = spin::Mutex::new(0);
 
 #[no_mangle]
 fn main(hart_id: usize) {
@@ -82,7 +83,7 @@ fn main(hart_id: usize) {
 
         // vm run
         info!("vm run cpu{}", hart_id);
-        vm.run(0);
+        vm.run(hart_id);
     }
     #[cfg(target_arch = "aarch64")]
     {
@@ -155,12 +156,13 @@ pub extern "C" fn secondary_main(hart_id: usize) {
 
     let vm = unsafe { HS_VM.get_mut_unchecked() };
 
-    vm.add_vcpu(vcpu);
     debug!(
         "add vcpu vcpu_id={:?} vcpu_num = {:?}",
         hart_id,
         vm.get_vcpu_num()
     );
+    vm.add_vcpu(vcpu);
+
 
     vm.init_vcpu(hart_id);
 
