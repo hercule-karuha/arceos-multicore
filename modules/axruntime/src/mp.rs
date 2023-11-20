@@ -7,6 +7,11 @@ static mut SECONDARY_BOOT_STACK: [[u8; TASK_STACK_SIZE]; SMP - 1] = [[0; TASK_ST
 
 static ENTERED_CPUS: AtomicUsize = AtomicUsize::new(1);
 
+extern "C" {
+    #[cfg(feature = "hv")]
+    fn secondary_main(cpu_id: usize);
+}
+
 pub fn start_secondary_cpus(primary_cpu_id: usize) {
     let mut logic_cpu_id = 0;
     for i in 0..SMP {
@@ -59,6 +64,11 @@ pub extern "C" fn rust_main_secondary(cpu_id: usize) -> ! {
 
     #[cfg(feature = "irq")]
     axhal::arch::enable_irqs();
+
+    #[cfg(feature = "hv")]
+    unsafe {
+        secondary_main(cpu_id);
+    }
 
     #[cfg(feature = "multitask")]
     axtask::run_idle();

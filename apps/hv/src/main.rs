@@ -17,7 +17,7 @@ use dtb_riscv64::MachineMeta;
 use libax::{
     hv::{
         self, phys_to_virt, GuestPageTable, GuestPageTableTrait, HyperCallMsg, HyperCraftHalImpl,
-        PerCpu, Result, VCpu, VmCpus, VmExitInfo, VM,
+        PerCpu, Result, VCpu, VmCpuStatus, VmCpus, VmExitInfo, VM,
     },
     info,
 };
@@ -54,14 +54,15 @@ fn main(hart_id: usize) {
     #[cfg(target_arch = "riscv64")]
     {
         // boot cpu
-        PerCpu::<HyperCraftHalImpl>::init(0, 0x4000);
+        PerCpu::<HyperCraftHalImpl>::init(hart_id, 0x4000);
 
         // get current percpu
         let pcpu = PerCpu::<HyperCraftHalImpl>::this_cpu();
 
         // create vcpu
         let gpt = setup_gpm(0x9000_0000).unwrap();
-        let vcpu = pcpu.create_vcpu(0, 0x9020_0000).unwrap();
+        let mut vcpu = pcpu.create_vcpu(hart_id, 0x9020_0000).unwrap();
+        vcpu.set_status(VmCpuStatus::Runnable);
         let mut vcpus = VmCpus::new();
 
         // add vcpu into vm
@@ -73,7 +74,11 @@ fn main(hart_id: usize) {
 
         let vm = unsafe { HS_VM.deref_mut() };
 
-        vm.init_vcpu(0);
+        while vm.get_vcpu_num() != 4 {
+            core::hint::spin_loop();
+        }
+
+        vm.init_vcpu(hart_id);
 
         // vm run
         info!("vm run cpu{}", hart_id);
@@ -130,6 +135,30 @@ fn main(hart_id: usize) {
     {
         panic!("Other arch is not supported yet!")
     }
+}
+
+#[no_mangle]
+fn secondary_main(hart_id: usize) {
+    // boot cpu
+    PerCpu::<HyperCraftHalImpl>::init(0, 0x4000);
+
+    // get current percpu
+    let pcpu = PerCpu::<HyperCraftHalImpl>::this_cpu();
+
+    // create vcpu
+    let gpt = setup_gpm(0x9000_0000).unwrap();
+    let vcpu = pcpu.create_vcpu(hart_id, 0).unwrap();
+
+    while let None = unsafe { HS_VM.try_get() } {
+        core::hint::spin_loop();
+    }
+
+    let vm = unsafe { HS_VM.get_mut_unchecked() };
+
+    vm.add_vcpu(vcpu);
+    debug!("add vcpu vcpu_id={:?}", hart_id);
+
+    vm.run(hart_id);
 }
 
 #[cfg(target_arch = "riscv64")]

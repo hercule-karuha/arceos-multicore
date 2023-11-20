@@ -92,10 +92,12 @@ name = "arceos-hv"
 version = "0.1.0"
 dependencies = [
  "arrayvec",
+ "axhal",
  "fdt",
  "lazy_init",
  "libax",
  "page_table_entry",
+ "spin 0.9.8",
 ]
 
 [[package]]
