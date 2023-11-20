@@ -43,9 +43,10 @@ mod dtb_riscv64;
 mod x64;
 
 use lazy_init::LazyInit;
+use spinlock::SpinNoIrq;
 
 #[cfg(target_arch = "riscv64")]
-static mut HS_VM: LazyInit<VM<HyperCraftHalImpl, GuestPageTable>> = LazyInit::new();
+static mut HS_VM: LazyInit<SpinNoIrq<VM<HyperCraftHalImpl, GuestPageTable>>> = LazyInit::new();
 
 #[no_mangle]
 fn main(hart_id: usize) {
@@ -69,20 +70,20 @@ fn main(hart_id: usize) {
         vcpus.add_vcpu(vcpu).unwrap();
 
         unsafe {
-            HS_VM.init_by(VM::new(vcpus, gpt).unwrap());
+            HS_VM.init_by(SpinNoIrq::new(VM::new(vcpus, gpt).unwrap()));
         }
 
         let vm = unsafe { HS_VM.deref_mut() };
 
-        while vm.get_vcpu_num() != 4 {
+        while vm.lock().get_vcpu_num() != 4 {
             core::hint::spin_loop();
         }
 
-        vm.init_vcpu(hart_id);
+        vm.lock().init_vcpu(hart_id);
 
         // vm run
         info!("vm run cpu{}", hart_id);
-        vm.run(0);
+        vm.lock().run(0);
     }
     #[cfg(target_arch = "aarch64")]
     {
@@ -138,7 +139,7 @@ fn main(hart_id: usize) {
 }
 
 #[no_mangle]
-fn secondary_main(hart_id: usize) {
+pub extern "C" fn secondary_main(hart_id: usize) {
     // boot cpu
     PerCpu::<HyperCraftHalImpl>::init(0, 0x4000);
 
@@ -155,10 +156,16 @@ fn secondary_main(hart_id: usize) {
 
     let vm = unsafe { HS_VM.get_mut_unchecked() };
 
-    vm.add_vcpu(vcpu);
-    debug!("add vcpu vcpu_id={:?}", hart_id);
+    vm.lock().add_vcpu(vcpu);
+    debug!(
+        "add vcpu vcpu_id={:?} vcpu_num = {:?}",
+        hart_id,
+        vm.lock().get_vcpu_num()
+    );
 
-    vm.run(hart_id);
+    vm.lock().init_vcpu(hart_id);
+
+    vm.lock().run(hart_id);
 }
 
 #[cfg(target_arch = "riscv64")]
