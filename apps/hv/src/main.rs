@@ -148,8 +148,12 @@ fn main(hart_id: usize) {
 
 #[no_mangle]
 pub extern "C" fn secondary_main(hart_id: usize) {
+    while let None = unsafe { HS_VM.try_get() } {
+        core::hint::spin_loop();
+    }
     // boot cpu
-    PerCpu::<HyperCraftHalImpl>::init(hart_id, 0x4000);
+    // PerCpu::<HyperCraftHalImpl>::init(hart_id, 0x4000);
+    PerCpu::<HyperCraftHalImpl>::setup_this_cpu(hart_id);
 
     // get current percpu
     let pcpu = PerCpu::<HyperCraftHalImpl>::this_cpu();
@@ -157,10 +161,6 @@ pub extern "C" fn secondary_main(hart_id: usize) {
     // create vcpu
     // let gpt = setup_gpm(0x9000_0000).unwrap();
     let vcpu = pcpu.create_vcpu(hart_id, 0).unwrap();
-
-    while let None = unsafe { HS_VM.try_get() } {
-        core::hint::spin_loop();
-    }
 
     let vm = unsafe { HS_VM.get_mut_unchecked() };
 
