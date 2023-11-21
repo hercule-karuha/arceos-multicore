@@ -164,11 +164,6 @@ pub extern "C" fn secondary_main(hart_id: usize) {
 
     let vm = unsafe { HS_VM.get_mut_unchecked() };
 
-    // debug!(
-    //     "add vcpu vcpu_id={:?} vcpu_num = {:?}",
-    //     hart_id,
-    //     vm.get_vcpu_num()
-    // );
     vm.add_vcpu(vcpu);
     debug!(
         "add vcpu ok vcpu_id={:?} vcpu_num = {:?}",
@@ -181,7 +176,6 @@ pub extern "C" fn secondary_main(hart_id: usize) {
     }
 
     vm.init_vcpu(hart_id);
-    info!("vm run vcpu{}", hart_id);
     vm.run(hart_id);
 }
 
