@@ -46,7 +46,14 @@ use lazy_init::LazyInit;
 
 #[cfg(target_arch = "riscv64")]
 static mut HS_VM: LazyInit<VM<HyperCraftHalImpl, GuestPageTable>> = LazyInit::new();
-// static mut INITED_CPU_NUM : spin::Mutex<usize> = spin::Mutex::new(0);
+
+use core::sync::atomic::{AtomicUsize, Ordering};
+
+static INITED_VCPUS: AtomicUsize = AtomicUsize::new(0);
+
+fn is_init_ok() -> bool {
+    INITED_VCPUS.load(Ordering::Acquire) == 4
+}
 
 #[no_mangle]
 fn main(hart_id: usize) {
@@ -68,6 +75,7 @@ fn main(hart_id: usize) {
 
         // add vcpu into vm
         vcpus.add_vcpu(vcpu).unwrap();
+        INITED_VCPUS.fetch_add(1, Ordering::Relaxed);
 
         unsafe {
             HS_VM.init_by(VM::new(vcpus, gpt).unwrap());
@@ -75,7 +83,7 @@ fn main(hart_id: usize) {
 
         let vm = unsafe { HS_VM.deref_mut() };
 
-        while vm.get_vcpu_num() != 4 {
+        while !is_init_ok() {
             core::hint::spin_loop();
         }
 
@@ -156,16 +164,24 @@ pub extern "C" fn secondary_main(hart_id: usize) {
 
     let vm = unsafe { HS_VM.get_mut_unchecked() };
 
-    debug!(
-        "add vcpu vcpu_id={:?} vcpu_num = {:?}",
-        hart_id,
-        vm.get_vcpu_num()
-    );
+    // debug!(
+    //     "add vcpu vcpu_id={:?} vcpu_num = {:?}",
+    //     hart_id,
+    //     vm.get_vcpu_num()
+    // );
     vm.add_vcpu(vcpu);
+    debug!(
+        "add vcpu ok vcpu_id={:?} vcpu_num = {:?}",
+        hart_id, INITED_VCPUS
+    );
+    INITED_VCPUS.fetch_add(1, Ordering::Relaxed);
 
+    while !is_init_ok() {
+        core::hint::spin_loop();
+    }
 
     vm.init_vcpu(hart_id);
-
+    info!("vm run vcpu{}", hart_id);
     vm.run(hart_id);
 }
 
