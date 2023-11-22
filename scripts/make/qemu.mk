@@ -131,7 +131,7 @@ endif
 
 define run_qemu
   @printf "    $(CYAN_C)Running$(END_C) $(QEMU) $(qemu_args-y) $(1)\n"
-  @$(QEMU) $(qemu_args-y)
+  @$(QEMU) $(qemu_args-y) -D qemu.log -d int,in_asm
 endef
 
 define run_qemu_debug

@@ -52,7 +52,7 @@ use core::sync::atomic::{AtomicUsize, Ordering};
 static INITED_VCPUS: AtomicUsize = AtomicUsize::new(0);
 
 fn is_init_ok() -> bool {
-    INITED_VCPUS.load(Ordering::Acquire) == 4
+    INITED_VCPUS.load(Ordering::Acquire) == 2
 }
 
 #[no_mangle]
