@@ -48,11 +48,13 @@ use lazy_init::LazyInit;
 static mut HS_VM: LazyInit<VM<HyperCraftHalImpl, GuestPageTable>> = LazyInit::new();
 
 use core::sync::atomic::{AtomicUsize, Ordering};
+use axconfig::SMP;
 
 static INITED_VCPUS: AtomicUsize = AtomicUsize::new(0);
 
+
 fn is_init_ok() -> bool {
-    INITED_VCPUS.load(Ordering::Acquire) == 2
+    INITED_VCPUS.load(Ordering::Acquire) == SMP
 }
 
 #[no_mangle]

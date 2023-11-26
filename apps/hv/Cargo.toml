@@ -12,4 +12,5 @@ fdt = {version = "0.1.5"}
 arrayvec = { version = "0.7.2", default-features = false }
 lazy_init = { path = "../../crates/lazy_init"}
 axhal = { path = "../../modules/axhal" }
+axconfig = { path = "../../modules/axconfig" }
 spin = "0.9"
